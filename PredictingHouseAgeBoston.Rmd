@@ -1,0 +1,61 @@
+---
+title: "Predicting Houses Age"
+author: "Sara Ahmed"
+date: "7/10/2020"
+output: html_document
+---
+
+```{r}
+library(neuralnet)
+library(caret)
+library(tidyverse)
+library(MASS)
+```
+Above, I chose my packages, but did not use the neuralnet package or the tidyverse package.
+```{r}
+data("Boston")
+df <- Boston
+str(df)
+?Boston
+hist(df$age, col= "green")
+summary(df)
+```
+Here I downloaded the Boston data, and looked at the structure using the structure call. I also built a histogram, just to take a look at the ages of the houses, and a summary to look at the range. The oldest house was 100 years old!
+```{r}
+#head(1:nrow(df))
+nrow(df)
+rows <- sample(1:nrow(df), nrow(df) * .8, replace = F)
+train_base <- df[rows,]
+test_base <- df[-rows,]
+dim(train_base)
+dim(test_base)
+```
+Above, I used 2 different methods for building out training and test sets. This one was the base R way.
+
+```{r}
+rows2 <- createDataPartition(df$age, times = 1, p = .8, list = F)
+training <- df[rows2,]
+testing  <- df[-rows2,]
+dim(training)
+dim(testing)
+```
+Above is the caret way of building out training and test sets.
+
+```{r}
+model_lm <- train(age ~ ., data = training, method = "lm", trControl = trainControl(method = "repeatedcv", number = 2, repeats = 2))
+#model_lm
+model_rf <- train(age ~ ., data = training, method = "ranger", trControl = trainControl(method = "repeatedcv", number = 2, repeats = 2))
+model_gbm <- train(age ~ ., data = training, method = "gbm", trControl = trainControl(method = "repeatedcv", number = 2, repeats = 2))
+```
+I built out the models above. I used the model lm, model rf, and the model gbm.
+
+
+```{r}
+sample <- resamples(list(Linear = model_lm, Forest = model_rf, GBM = model_gbm))
+bwplot(sample)
+dotplot(sample)
+summary(sample)
+```
+Above, we put the house ages through the resamples functions which allowed us to compare it. I used the bw plot, the dot plot, and the summary to take a good look, and figure out which model was the best.
+
+Based on the dot plot graphic and the summary, I was able to conclude that the GBM model is probably the best. It performed really close to the forest in the RMSE, but the linear model seemed to perform pretty badly! The dot plot graph showed a wider range for the GBM model with 0.95 confidence, which is why I chose it.
